@@ -131,7 +131,7 @@ export default function ChatAgent() {
       if (typeof window !== 'undefined' && window.GEMINI_MODEL) return window.GEMINI_MODEL;
     } catch {}
     // Default (only model requested)
-    return 'gemini-1.5-flash-latest';
+    return 'gemini-2.5-flash';
   }
 
   function getApiVersion() {
