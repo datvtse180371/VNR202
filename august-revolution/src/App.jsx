@@ -1,17 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Menu, X, Calendar, MapPin, Users, Award, BookOpen, ChevronRight, Star, Flame, Flag, Target, Zap } from 'lucide-react';
 import ChatAgent from './components/ChatAgent';
-import { Analytics } from '@vercel/analytics/next';
-
-// Optional: Vercel Analytics (requires installing @vercel/analytics)
-let AnalyticsComp = null;
-try {
-  // Dynamic import to avoid build errors if package not installed
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // @ts-ignore
-  const mod = require('@vercel/analytics/react');
-  AnalyticsComp = mod.Analytics;
-} catch {}
+// Vercel Analytics for Vite/React is injected in `src/main.jsx` (no component import here)
 
 // Import images from assets
 import heroImage from './assets/mo-dau.jpg';
@@ -843,8 +833,7 @@ const AugustRevolutionWebsite = () => {
       {/* Chat Agent */}
       <ChatAgent />
 
-      {/* Vercel Analytics */}
-      {AnalyticsComp ? <AnalyticsComp /> : null}
+      {/* Vercel Analytics is injected via src/main.jsx */}
 
       <style jsx>{`
         @media (prefers-reduced-motion: reduce) {
