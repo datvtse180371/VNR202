@@ -130,7 +130,7 @@ export default function ChatAgent() {
       // eslint-disable-next-line no-undef
       if (typeof window !== 'undefined' && window.GEMINI_MODEL) return window.GEMINI_MODEL;
     } catch {}
-    // Default recommended
+    // Default (only model requested)
     return 'gemini-1.5-flash-latest';
   }
 
@@ -163,31 +163,7 @@ export default function ChatAgent() {
     return 'v1beta';
   }
 
-  async function listModels(apiKey, apiVersion) {
-    const url = `https://generativelanguage.googleapis.com/${apiVersion}/models?key=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, { method: 'GET' });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const err = new Error(`ListModels error: ${res.status} ${(data && (data.error?.message || data.message)) || res.statusText}`);
-      err.details = { status: res.status, data };
-      throw err;
-    }
-    return Array.isArray(data.models) ? data.models : [];
-  }
-
-  function pickModel(models) {
-    const supportsGenerate = (m) => Array.isArray(m.supportedGenerationMethods) ? m.supportedGenerationMethods.includes('generateContent') : true;
-    const names = new Set(models.map(m => m.name));
-    const preferred = [getModel(), 'models/gemini-1.5-flash-latest', 'models/gemini-1.5-flash', 'models/gemini-1.0-pro', 'models/gemini-pro'];
-    for (const p of preferred) {
-      const name = p.startsWith('models/') ? p : `models/${p}`;
-      const m = models.find(x => x.name === name);
-      if (m && supportsGenerate(m)) return name.replace(/^models\//, '');
-    }
-    const first = models.find(m => supportsGenerate(m));
-    if (first) return first.name.replace(/^models\//, '');
-    return null;
-  }
+  // Model discovery removed per request (force 1.5 flash). Keeping helpers deleted.
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -277,36 +253,8 @@ export default function ChatAgent() {
 
       if (apiKey) {
         try {
-          let apiVersion = getApiVersion();
+          let apiVersion = getApiVersion() || 'v1';
           let model = getModel();
-          // If no cached model or forced discovery, list models
-          let discovered = false;
-          try {
-            const models = await listModels(apiKey, apiVersion);
-            const picked = pickModel(models);
-            if (picked) {
-              model = picked;
-              discovered = true;
-            } else {
-              throw new Error('No suitable model with generateContent');
-            }
-          } catch (err1) {
-            // Retry discovery with v1 if v1beta fails or 404
-            const status = err1 && err1.details && err1.details.status;
-            if (status === 404 || /v1beta/i.test(String(err1))) {
-              try {
-                const modelsV1 = await listModels(apiKey, 'v1');
-                const pickedV1 = pickModel(modelsV1);
-                if (pickedV1) {
-                  model = pickedV1;
-                  apiVersion = 'v1';
-                  discovered = true;
-                }
-              } catch (err2) {
-                // ignore; will attempt with configured defaults
-              }
-            }
-          }
 
           let answer;
           try {
