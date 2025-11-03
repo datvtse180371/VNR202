@@ -65,6 +65,7 @@ export default function ChatAgent() {
   const [cfgKey, setCfgKey] = useState('');
   const [cfgModel, setCfgModel] = useState('');
   const [cfgVersion, setCfgVersion] = useState('');
+  const cacheRef = useRef(new Map());
 
   const knowledge = useMemo(() => kb, []);
 
@@ -208,7 +209,7 @@ export default function ChatAgent() {
 
   async function generateWithGemini(query, contextDocs, apiKey, model, apiVersion) {
     const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const contextText = contextDocs
+    const contextText = contextDocs.slice(0, 2)
       .map(({ doc }, idx) => `(${idx + 1}) ${doc.title}: ${doc.content}`)
       .join('\n');
     const system =
@@ -237,7 +238,7 @@ export default function ChatAgent() {
   async function generateViaProxy(query, contextDocs) {
     const payload = {
       query,
-      context: contextDocs.map(({ doc }) => ({ title: doc.title, content: doc.content })),
+      context: contextDocs.slice(0, 2).map(({ doc }) => ({ title: doc.title, content: doc.content })),
       model: getModel(),
       apiVersion: getApiVersion(),
     };
@@ -263,8 +264,15 @@ export default function ChatAgent() {
     setMessages(prev => [...prev, { role: 'user', content: q }]);
     setLoading(true);
     try {
+      // Cache check
+      const cacheKey = `${getModel()}|${getApiVersion()}|${q}`;
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached) {
+        setMessages(prev => [...prev, { role: 'agent', content: cached }]);
+        return;
+      }
       const ranked = scoreDocuments(q, knowledge);
-      const top = ranked.slice(0, 5);
+      const top = ranked.slice(0, 2);
       const apiKey = getApiKey();
 
       if (apiKey) {
@@ -300,7 +308,19 @@ export default function ChatAgent() {
             }
           }
 
-          const answer = await generateWithGemini(q, top, apiKey, model, apiVersion);
+          let answer;
+          try {
+            answer = await generateWithGemini(q, top, apiKey, model, apiVersion);
+          } catch (e1) {
+            const status = e1 && e1.details && e1.details.status;
+            // Retry once on 429 with small backoff
+            if (status === 429) {
+              await new Promise(r => setTimeout(r, 15000));
+              answer = await generateWithGemini(q, top, apiKey, model, apiVersion);
+            } else {
+              throw e1;
+            }
+          }
           if (answer) {
             setMessages(prev => [...prev, { role: 'agent', content: answer }]);
             // Persist working config
@@ -310,6 +330,7 @@ export default function ChatAgent() {
                 localStorage.setItem('GEMINI_API_VERSION', apiVersion);
               }
             } catch {}
+            cacheRef.current.set(cacheKey, answer);
           } else {
             throw new Error('Empty response');
           }
@@ -332,14 +353,27 @@ export default function ChatAgent() {
               .join('\n');
             const answer = `Dựa trên dữ liệu hiện có, đây là thông tin liên quan:\n${bullets}\n\n(Lưu ý: Gemini lỗi: ${errorText})`;
             setMessages(prev => [...prev, { role: 'agent', content: answer }]);
+            cacheRef.current.set(cacheKey, answer);
           }
         }
       } else {
         // Try server proxy (for Vercel deployment) before pure retrieval fallback
         try {
-          const answer = await generateViaProxy(q, top);
+          let answer;
+          try {
+            answer = await generateViaProxy(q, top);
+          } catch (e1) {
+            const status = e1 && e1.details && e1.details.status;
+            if (status === 429) {
+              await new Promise(r => setTimeout(r, 15000));
+              answer = await generateViaProxy(q, top);
+            } else {
+              throw e1;
+            }
+          }
           if (answer) {
             setMessages(prev => [...prev, { role: 'agent', content: answer }]);
+            cacheRef.current.set(cacheKey, answer);
           } else {
             throw new Error('Empty proxy response');
           }
