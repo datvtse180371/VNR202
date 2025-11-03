@@ -279,6 +279,7 @@ export default function ChatAgent() {
               }
             } catch {}
             cacheRef.current.set(cacheKey, answer);
+            try { window.dispatchEvent(new CustomEvent('ai:answer', { detail: { via: 'gemini' } })); } catch {}
           } else {
             throw new Error('Empty response');
           }
@@ -322,6 +323,7 @@ export default function ChatAgent() {
           if (answer) {
             setMessages(prev => [...prev, { role: 'agent', content: answer }]);
             cacheRef.current.set(cacheKey, answer);
+            try { window.dispatchEvent(new CustomEvent('ai:answer', { detail: { via: 'proxy' } })); } catch {}
           } else {
             throw new Error('Empty proxy response');
           }
@@ -342,6 +344,7 @@ export default function ChatAgent() {
             .join('\n');
           const answer = `Dựa trên dữ liệu hiện có, đây là thông tin liên quan:\n${bullets}\n\n(Lưu ý: không thể truy cập Gemini qua proxy.)`;
           setMessages(prev => [...prev, { role: 'agent', content: answer }]);
+          try { window.dispatchEvent(new CustomEvent('ai:answer', { detail: { via: 'retrieval' } })); } catch {}
         }
         }
       }

@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Menu, X, Calendar, MapPin, Users, Award, BookOpen, ChevronRight, Star, Flame, Flag, Target, Zap } from 'lucide-react';
 import ChatAgent from './components/ChatAgent';
-import FooterStats from './components/FooterStats';
-// Optional: Vercel Analytics (requires installing @vercel/analytics)
-let AnalyticsComp = null;
-try {
-  // Dynamic import to avoid build errors if package not installed
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // @ts-ignore
-  const mod = require('@vercel/analytics/react');
-  AnalyticsComp = mod.Analytics;
-} catch {}
+import { Analytics } from '@vercel/analytics/react';
 
 // Import images from assets
 import heroImage from './assets/mo-dau.jpg';
@@ -831,7 +822,6 @@ const AugustRevolutionWebsite = () => {
               <p className="text-sm text-gray-500">
                 © 2024 - Tài liệu tham khảo lịch sử Đảng Cộng sản Việt Nam
               </p>
-              <FooterStats />
             </div>
           </div>
         </div>
@@ -841,7 +831,7 @@ const AugustRevolutionWebsite = () => {
       <ChatAgent />
 
       {/* Vercel Analytics */}
-      {AnalyticsComp ? <AnalyticsComp /> : null}
+      <Analytics />
 
       <style jsx>{`
         @media (prefers-reduced-motion: reduce) {
