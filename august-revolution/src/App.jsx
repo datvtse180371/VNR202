@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Menu, X, Calendar, MapPin, Users, Award, BookOpen, ChevronRight, Star, Flame, Flag, Target, Zap } from 'lucide-react';
 import ChatAgent from './components/ChatAgent';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
+
+// Optional: Vercel Analytics (requires installing @vercel/analytics)
+let AnalyticsComp = null;
+try {
+  // Dynamic import to avoid build errors if package not installed
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // @ts-ignore
+  const mod = require('@vercel/analytics/react');
+  AnalyticsComp = mod.Analytics;
+} catch {}
 
 // Import images from assets
 import heroImage from './assets/mo-dau.jpg';
@@ -822,6 +832,9 @@ const AugustRevolutionWebsite = () => {
               <p className="text-sm text-gray-500">
                 © 2024 - Tài liệu tham khảo lịch sử Đảng Cộng sản Việt Nam
               </p>
+              <p className="mt-3 text-xs text-gray-400">
+                Dự án website có tích hợp công nghệ Trí tuệ Nhân tạo (AI) nhằm nâng cao trải nghiệm người dùng. AI được sử dụng để gợi ý nội dung phù hợp, hỗ trợ chatbot tự động và phân tích hành vi truy cập, giúp website hoạt động thông minh và hiệu quả hơn.
+              </p>
             </div>
           </div>
         </div>
@@ -831,7 +844,7 @@ const AugustRevolutionWebsite = () => {
       <ChatAgent />
 
       {/* Vercel Analytics */}
-      <Analytics />
+      {AnalyticsComp ? <AnalyticsComp /> : null}
 
       <style jsx>{`
         @media (prefers-reduced-motion: reduce) {
